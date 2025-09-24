@@ -1,0 +1,56 @@
+name: A Windows Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+      - name: Install GoReleaser
+        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
+        with:
+          version: "~1.17.1"
+          install-only: true
+      - name: Install Azure Code Signing Client
+        shell: pwsh
+        env:
+          ACS_DIR: ${{ runner.temp }}\acs
+          ACS_ZIP: ${{ runner.temp }}\acs.zip
+          CORRELATION_ID: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          METADATA_PATH: ${{ runner.temp }}\acs\metadata.json
+        run: |
+          # Download Azure Code Signing client containing the DLL needed for signtool in script/sign
+          Invoke-WebRequest -Uri https://www.nuget.org/api/v2/package/Azure.CodeSigning.Client/1.0.43 -OutFile $Env:ACS_ZIP -Verbose
+          Expand-Archive $Env:ACS_ZIP -Destination $Env:ACS_DIR -Force -Verbose
+
+          # Generate metadata file for signtool, used in signing box .exe and .msi
+          @{
+            CertificateProfileName = "GitHubInc"
+            CodeSigningAccountName = "GitHubInc"
+            CorrelationId = $Env:CORRELATION_ID
+            Endpoint =  "https://wus.codesigning.azure.net/"
+          } | ConvertTo-Json | Out-File -FilePath $Env:METADATA_PATH
+
+      # Azure Code Signing leverages the environment variables for secrets that complement the metadata.json
+      # file generated above (AZURE_CLIENT_ID, AZURE_CLIENT_SECRET, AZURE_TENANT_ID)
+      # For more information, see https://learn.microsoft.com/en-us/dotnet/api/azure.identity.defaultazurecredential?view=azure-dotnet
+      - name: Build release binaries
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.SPN_GITHUB_CLI_SIGNING_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.SPN_GITHUB_CLI_SIGNING }}
+          AZURE_TENANT_ID: ${{ secrets.SPN_GITHUB_CLI_SIGNING_TENANT_ID }}
+          DLIB_PATH: ${{ runner.temp }}\acs\bin\x64\Azure.CodeSigning.Dlib.dll
+          METADATA_PATH: ${{ runner.temp }}\acs\metadata.json
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: script/release --local "$TAG_NAME" --platform windows
+      - name: Set up MSBuild
+        id: setupmsbuild
+        uses: microsoft/setup-msbuild@6fb02220983dee41ce7ae257b6f4d8f9bf5ed4ce
