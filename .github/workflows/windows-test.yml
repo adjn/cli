@@ -16,7 +16,7 @@ jobs:
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: "~> 2"
+          version: "~1.17.1"
           install-only: true
       - name: Install Azure Code Signing Client
         shell: pwsh
