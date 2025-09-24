@@ -50,9 +50,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
+        uses: goreleaser/goreleaser-action@286f3b13d4532c1ec0b8c0e9ee3e6b7c40c9abde
         with:
-          version: "~1.17.1"
+          version: "~2.0.0"
           install-only: true
       - name: Build release binaries
         env:
@@ -103,9 +103,9 @@ jobs:
           security set-key-partition-list -S "apple-tool:,apple:,codesign:" -s -k "$keychain_password" "$keychain"
           rm "$RUNNER_TEMP/cert.p12"
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
+        uses: goreleaser/goreleaser-action@286f3b13d4532c1ec0b8c0e9ee3e6b7c40c9abde
         with:
-          version: "~1.17.1"
+          version: "~2.0.0"
           install-only: true
       - name: Build release binaries
         env:
@@ -157,9 +157,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
+        uses: goreleaser/goreleaser-action@286f3b13d4532c1ec0b8c0e9ee3e6b7c40c9abde
         with:
-          version: "~1.17.1"
+          version: "~2.0.0"
           install-only: true
       - name: Install Azure Code Signing Client
         shell: pwsh
