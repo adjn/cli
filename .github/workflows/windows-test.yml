@@ -14,9 +14,9 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install GoReleaser
-        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552
+        uses: goreleaser/goreleaser-action@6
         with:
-          version: "~1.17.1"
+          version: "~> 2"
           install-only: true
       - name: Install Azure Code Signing Client
         shell: pwsh
