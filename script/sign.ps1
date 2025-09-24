@@ -1,19 +1,41 @@
 #!/usr/bin/env pwsh
+$ErrorActionPreference = 'Continue'
 
-if ($null -eq $Env:DLIB_PATH) {
-	Write-Host "Skipping Windows code signing; DLIB_PATH not set"
-	exit
+if (-not $Env:DLIB_PATH) {
+  Write-Host "Skipping Windows code signing; DLIB_PATH not set"
+  exit 0
+}
+if (-not $Env:METADATA_PATH) {
+  Write-Host "Skipping Windows code signing; METADATA_PATH not set"
+  exit 0
 }
 
-if ($null -eq $Env:METADATA_PATH) {
-	Write-Host "Skipping Windows code signing; METADATA_PATH not set"
-	exit
-}
+$signtool = (Resolve-Path 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' | Select-Object -Last 1).Path
+Write-Host "Using signtool: $signtool"
 
-$signtool = Resolve-Path "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe" | Select-Object -Last 1
-Write-Host "Using signtool from $signtool"
+$target = $Args[0]
+Write-Host "Target file: $target"
 
 tree D:\a\cli\cli\dist /F
 
-& $signtool sign /v /d "GitHub CLI" /fd sha256 /td sha256 /tr http://timestamp.acs.microsoft.com /v /dlib "$Env:DLIB_PATH" /dmdf "$Env:METADATA_PATH" $Args[0]
-exit $LASTEXITCODE
+$cmd = @(
+  'sign','/v','/debug',
+  '/d','GitHub CLI',
+  '/fd','sha256',
+  '/td','sha256',
+  '/tr','http://timestamp.acs.microsoft.com',
+  '/dlib',"$Env:DLIB_PATH",
+  '/dmdf',"$Env:METADATA_PATH",
+  $target
+)
+
+Write-Host "Running: $signtool $($cmd -join ' ')"
+
+$output = & $signtool @cmd 2>&1
+$exit = $LASTEXITCODE
+
+Write-Host '----- signtool combined output begin -----'
+$output | ForEach-Object { Write-Host $_ }
+Write-Host '----- signtool combined output end -----'
+
+exit $exit
